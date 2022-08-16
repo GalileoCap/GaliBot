@@ -17,8 +17,10 @@ class Message:
     self.chat = Chat(obj['chat']) if 'chat' in obj else None
 
     self.raw = obj.get('text');
-    firstSpace, isCommand = self.raw.find(' '), len(self.raw) > 0 and self.raw[0] == '/';
-    if firstSpace == -1: firstSpace = None;
+    firstSpace, isCommand = None, False;
+    if self.raw:
+      firstSpace, isCommand = self.raw.find(' '), len(self.raw) > 0 and self.raw[0] == '/';
+      if firstSpace == -1: firstSpace = None;
     self.command = self.raw[1:firstSpace] if isCommand else None;
     self.text = self.raw[firstSpace:] if isCommand else self.raw;
     #TODO: Everything else as needed
