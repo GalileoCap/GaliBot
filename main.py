@@ -12,7 +12,7 @@ def lastUpdateId():
 
 def saveLastUpdate(_id):
   with open('./lastUpdate.log', 'w') as fin:
-    fin.write(str(_id))
+    fin.write(str(_id - 1))
 
 def test(message):
   print('handle.test');
