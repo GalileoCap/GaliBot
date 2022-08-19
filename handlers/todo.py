@@ -7,15 +7,16 @@ dfName = 'todo';
 def add(message):
   print('todo.handle.add');
   df = db.getDf(dfName);
-  _, tags, text, _ = re.split(r'^add\s*(\[[^\]]*\])\s*"([^("$)]*)"$', message.text);
+  tags = re.search(r'^add\s*(\[[\w,]+\])', message.text);
+  text = re.search(r'^add\s*(?:\[[\w,]+])?\s*"([^("$)]*)"$', message.text);
   data = {
     'userId': message.user.id,
-    'tags': tags,
-    'text': text,
+    'tags': tags.group(1) if tags else '[]',
+    'text': text.group(1) if text else '',
   };
-  ndf = pd.concat([df, pd.DataFrame([data])], ignore_index = True).drop_duplicates(); #TODO: Don't reset index
-  db.saveDf(ndf, dfName);
-  message.respond('added');
+  df = pd.concat([df, pd.DataFrame([data])], ignore_index = True).drop_duplicates(); #TODO: Don't reset index
+  db.saveDf(df, dfName);
+  message.respond('added'); #TODO: React
 
 def select(message):
   print('todo.handle.select');
