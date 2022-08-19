@@ -14,7 +14,7 @@ class Message:
   def __init__(self, obj):
     self.id = obj.get('message_id')
     self.user = User(obj['from']) if 'from' in obj else None
-    self.chat = Chat(obj['chat']) if 'chat' in obj else None
+    self.chat = Chat(obj['chat']); #A: Messages have to have a chat
 
     self.raw = obj.get('text');
     firstSpace, isCommand = None, False;
@@ -27,6 +27,9 @@ class Message:
 
   def __repr__(self):
     return f'{{id: {self.id}, user: {self.user}, command: {self.command}, text: {self.text}}}'
+
+  def respond(self, text):
+    sendMessage(self.chat.id, text, self.id);
 
 class User:
   def __init__(self, obj):

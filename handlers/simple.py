@@ -4,12 +4,17 @@ import api
 import cfg
 
 def test(message):
-  print('simple test');
-  api.sendMessage(message.chat.id, f'Test: {message.text}', message.id);
+  print('simple.handle.test');
+  message.respond(
+    f'Test: {message.text}'
+  );
 
 def ip(message):
-  print('simple ip')
-  api.sendMessage(message.chat.id, requests.get('https://api.ipify.org').text, message.id);
+  print('simple.handle.ip');
+  response = requests.get('https://api.ipify.org').text;
+  message.respond(
+    response.removeprefix('http://')
+  );
 
 def handle(message):
   command = message.command;
