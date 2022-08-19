@@ -13,16 +13,16 @@ class Update:
 class Message:
   def __init__(self, obj):
     self.id = obj.get('message_id')
-    self.user = User(obj['from']) if 'from' in obj else None
+    self.user = User(obj['from']); #A: Messages have to have a user
     self.chat = Chat(obj['chat']); #A: Messages have to have a chat
 
-    self.raw = obj.get('text');
-    firstSpace, isCommand = None, False;
-    if self.raw:
-      firstSpace, isCommand = self.raw.find(' '), len(self.raw) > 0 and self.raw[0] == '/';
-      if firstSpace == -1: firstSpace = None;
-    self.command = self.raw[1:firstSpace] if isCommand else None;
-    self.text = self.raw[firstSpace:] if isCommand else self.raw;
+    raw = obj.get('text');
+    parts = raw.split() if raw else [];
+
+    isCommand = len(parts) > 0 and parts[0][0] == '/';
+    self.command = parts[0][1:] if isCommand else None;
+    self.subcommand = parts[1] if isCommand and len(parts) > 1 else None;
+    self.text = ' '.join(parts[1:]) if isCommand else raw;
     #TODO: Everything else as needed
 
   def __repr__(self):

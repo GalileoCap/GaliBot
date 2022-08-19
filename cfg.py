@@ -4,3 +4,5 @@ chatIds = [ #U: List of chatIds to respond to
 
 logDir = './log';
 lastUpdateFile = 'lastUpdate';
+
+dbDir = './db';
