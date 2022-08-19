@@ -17,7 +17,13 @@ def add(message):
   db.saveDf(ndf, dfName);
   message.respond('added');
 
+def select(message):
+  print('todo.handle.select');
+  df = db.getDf(dfName);
+  message.respond(str(df)); #TODO: Fancier #TODO: Divide in pages
+
 def handle(message):
-  _, subcommand, _ = re.split(r'^(\w+)', message.text);
-  if subcommand.lower() == 'add': add(message);
+  _, subcommand, _ = re.split(r'^(\w+)', message.text); subcommand = subcommand.lower();
+  if subcommand == 'add': add(message);
+  elif subcommand == 'select': select(message);
   else: pass #TODO: Unknown
