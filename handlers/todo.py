@@ -13,11 +13,11 @@ def add(message):
     'tags': tags,
     'text': text,
   };
-  ndf = pd.concat([df, pd.DataFrame([data])]);
+  ndf = pd.concat([df, pd.DataFrame([data])], ignore_index = True).drop_duplicates(); #TODO: Don't reset index
   db.saveDf(ndf, dfName);
   message.respond('added');
 
 def handle(message):
   _, subcommand, _ = re.split(r'^(\w+)', message.text);
-  if subcommand == 'add': add(message);
+  if subcommand.lower() == 'add': add(message);
   else: pass #TODO: Unknown
