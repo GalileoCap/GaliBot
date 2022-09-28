@@ -52,7 +52,7 @@ def getUpdates(lastUpdateId = -1): #TODO: Get better params
     f'https://api.telegram.org/bot{cfg.API_TOKEN}/getUpdates',
     params = {'offset': lastUpdateId + 1}, #A: Only new updates 
   ).json()
-  if r['ok'] == 'False': print('getUpdates ERROR') #TODO: Write log and throw error
+  if not r['ok']: print('getUpdates ERROR') #TODO: Write log and throw error
   return [Update(obj) for obj in r['result']]
 
 def sendMessage(chatId, text, reply_to): #TODO: Get better params
