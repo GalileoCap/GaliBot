@@ -81,48 +81,47 @@ func ipUpdater(Bot *tgbotapi.BotAPI) {
   }
 }
 
+func command(chatID int64, Message *tgbotapi.Message, Bot *tgbotapi.BotAPI) {
+  msg := tgbotapi.NewMessage(chatID, "");
+  msg.ReplyToMessageID = Message.MessageID;
+
+  if permLvl, ok := Permissions[chatID]; ok && permLvl != Block {
+    switch Message.Command() {
+      case "ping": msg.Text = "pong";
+      case "ip":
+        if permLvl != Admin {
+          msg.Text = fmt.Sprintf("Unknown command: /%v", Message.Command()); //TODO: Repeated code
+          break;
+        }
+        if _, err := getIP(); err != nil {
+          msg.Text = "Error getting IP";
+        } else {
+          msg.Text = fmt.Sprintf("IP: %v", CurrIP);
+        }
+      default: msg.Text = fmt.Sprintf("Unknown command: /%v", Message.Command());
+    }
+  } else {
+    msg.Text = "You're not in the allowlist, please ask your local admin";
+  }
+
+  if _, err := Bot.Send(msg); err != nil {
+    log.Printf("[command] Error sending message: %v", err);
+  }
+}
+
 func listenForMessages(Bot *tgbotapi.BotAPI) {
   u := tgbotapi.NewUpdate(0); //TODO: Last update +1
   u.Timeout = 60; //TODO: What?
 
   updates := Bot.GetUpdatesChan(u);
 
-  OUTER:
   for update := range updates {
     chatID := update.FromChat().ID; message := update.Message; //A: Rename
     log.Printf("[listenForMessages] Received update from: %v", chatID);
 
-    if message == nil { //A: Ignore non-Message updates //TODO
-      continue;
-    }
-    if !message.IsCommand() { //A: Ignore non-Command messages
-      continue;
-    }
-
-    msg := tgbotapi.NewMessage(chatID, "");
-    msg.ReplyToMessageID = message.MessageID;
-
-    if permLvl, ok := Permissions[chatID]; ok && permLvl != Block {
-      switch update.Message.Command() {
-        case "ping": msg.Text = "pong";
-        case "ip":
-          if permLvl != Admin {
-            continue OUTER; //A: Silent
-          }
-          if _, err := getIP(); err != nil {
-            msg.Text = "Error getting IP";
-          } else {
-            msg.Text = fmt.Sprintf("IP: %v", CurrIP);
-          }
-        default: msg.Text = fmt.Sprintf("Unknown command: /%v", message.Command());
-      }
-    } else {
-      msg.Text = "You're not in the allowlist, please ask your local admin";
-    }
-
-    if _, err := Bot.Send(msg); err != nil {
-      log.Printf("[listenForMessages] Error sending message: %v", err);
-    }
+    if message != nil && message.IsCommand() {
+      command(chatID, message, Bot);
+    } //TODO: Non-message updates
   }
 }
 
