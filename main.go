@@ -74,6 +74,15 @@ func unknownCommand(message *tgbotapi.Message, Bot *tgbotapi.BotAPI) {
   }
 }
 
+func pingCommand(message *tgbotapi.Message, Bot *tgbotapi.BotAPI) {
+  msg := tgbotapi.NewMessage(message.From.ID, "pong");
+  msg.ReplyToMessageID = message.MessageID;
+
+  if _, err := Bot.Send(msg); err != nil {
+    log.Printf("[pingCommand] Error sending message: %v", err);
+  }
+}
+
 func listenForMessages(Bot *tgbotapi.BotAPI) {
   u := tgbotapi.NewUpdate(0); //TODO: Last update +1
   u.Timeout = 60; //TODO: What?
@@ -94,8 +103,8 @@ func listenForMessages(Bot *tgbotapi.BotAPI) {
     }
 
     switch update.Message.Command() {
-      default:
-        unknownCommand(update.Message, Bot);
+      case "ping": pingCommand(update.Message, Bot);
+      default: unknownCommand(update.Message, Bot);
     }
   }
 }
@@ -114,3 +123,4 @@ func main() {
 }
 
 //TODO: Split into multiple files
+//TODO: Repeated code between commands
