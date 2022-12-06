@@ -98,10 +98,10 @@ func command(chatID int64, Message *tgbotapi.Message, Bot *tgbotapi.BotAPI) {
         } else {
           msg.Text = fmt.Sprintf("IP: %v", CurrIP);
         }
-      default: msg.Text = fmt.Sprintf("Unknown command: /%v", Message.Command());
+      default: msg.Text = fmt.Sprintf("Unknown command: /%v, try asking for /help", Message.Command());
     }
   } else {
-    msg.Text = "You're not in the allowlist, please ask your local admin";
+    msg.Text = "You're not in the allowlist, please ask your local admin to add you";
   }
 
   if _, err := Bot.Send(msg); err != nil {
