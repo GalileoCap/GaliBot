@@ -42,7 +42,6 @@ func ipUpdater(Bot *tgbotapi.BotAPI) {
       log.Printf("[ipUpdater] Error getting IP: %v", err);
       //TODO: Handle
     }
-    defer resp.Body.Close();
     
     newIP_b, err := ioutil.ReadAll(resp.Body);
     if err != nil {
@@ -55,6 +54,8 @@ func ipUpdater(Bot *tgbotapi.BotAPI) {
       log.Printf("[ipUpdater] IP changed to: %v", ip);
       Bot.Send(tgbotapi.NewMessage(1129477471, fmt.Sprintf("[ipUpdater] newIP: %v", ip))); //TODO: Configure chatID
     }
+
+    resp.Body.Close();
   }
   //TODO: Simplify
   //TODO: Callable
