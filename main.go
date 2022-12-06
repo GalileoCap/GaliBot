@@ -17,6 +17,7 @@ type Credentials struct {
 };
 
 var Bot *tgbotapi.BotAPI;
+var myChatID int64 = 1129477471;
 
 func getCredentials(fpath string) Credentials {
   data, err := os.ReadFile(fpath); //TODO: Config path
@@ -31,6 +32,11 @@ func getCredentials(fpath string) Credentials {
   }
 
   return credentials;
+}
+
+func checkPermissions(chatID int64) bool {
+  return chatID == myChatID;
+  //TODO: Allowlist
 }
 
 func ipUpdater(Bot *tgbotapi.BotAPI) {
@@ -52,13 +58,20 @@ func ipUpdater(Bot *tgbotapi.BotAPI) {
     if ip != newIP {
       ip = newIP;
       log.Printf("[ipUpdater] IP changed to: %v", ip);
-      Bot.Send(tgbotapi.NewMessage(1129477471, fmt.Sprintf("[ipUpdater] newIP: %v", ip))); //TODO: Configure chatID
+      Bot.Send(tgbotapi.NewMessage(myChatID, fmt.Sprintf("[ipUpdater] newIP: %v", ip)));
     }
 
     resp.Body.Close();
   }
   //TODO: Simplify
   //TODO: Callable
+}
+
+func unknownCommand(message *tgbotapi.Message, Bot *tgbotapi.BotAPI) {
+  msg := tgbotapi.NewMessage(message.From.ID, fmt.Sprintf("Unknown command: /%v", message.Command()));
+  if _, err := Bot.Send(msg); err != nil {
+    log.Printf("[unknownCommand] Error sending message: %v", err);
+  }
 }
 
 func listenForMessages(Bot *tgbotapi.BotAPI) {
@@ -68,13 +81,21 @@ func listenForMessages(Bot *tgbotapi.BotAPI) {
   updates := Bot.GetUpdatesChan(u);
 
   for update := range updates {
-    if update.Message != nil { //TODO: 
-      log.Printf("[%s] %s", update.Message.From.UserName, update.Message.Text)
+    log.Printf("[listenForMessages] Received update from: %v", update.FromChat().ID);
 
-      msg := tgbotapi.NewMessage(update.Message.Chat.ID, update.Message.Text)
-      msg.ReplyToMessageID = update.Message.MessageID
+    if update.Message == nil { //A: Ignore non-Message updates //TODO
+      continue;
+    }
+    if !update.Message.IsCommand() { //A: Ignore non-Command messages
+      continue;
+    }
+    if !checkPermissions(update.Message.From.ID) {
+      continue;
+    }
 
-      Bot.Send(msg)
+    switch update.Message.Command() {
+      default:
+        unknownCommand(update.Message, Bot);
     }
   }
 }
@@ -91,3 +112,5 @@ func main() {
   go ipUpdater(Bot);
   listenForMessages(Bot);
 }
+
+//TODO: Split into multiple files
