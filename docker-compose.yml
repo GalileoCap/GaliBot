@@ -1,0 +1,27 @@
+version: "3.9"
+
+services:
+  app:
+    build: ./src
+    depends_on:
+      - database
+    container_name: galibot
+    environment:
+      - 'DB_PORT=3306'
+      - 'DB_HOST=database'
+
+  database:
+    image: mysql:8
+    environment:
+      - 'MYSQL_ROOT_PASSWORD=root' #TODO
+      - 'MYSQL_PASSWORD=root' #TODO
+      - 'MYSQL_DATABASE=galibot' #TODO
+    container_name: galibot_db
+    ports:
+      - 3306:3306
+    volumes:
+      - galibot-data:/var/lib/mysql
+
+# persisted storage
+volumes:
+  galibot-data:
