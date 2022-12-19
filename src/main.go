@@ -2,6 +2,8 @@ package main
 
 import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+  "database/sql"
+  _ "github.com/go-sql-driver/mysql"
 
 	"os"
 	"io/ioutil" //TODO: Use os
@@ -125,7 +127,40 @@ func listenForMessages(Bot *tgbotapi.BotAPI) {
   }
 }
 
+type User struct {
+  id int64;
+  name string;
+}
+
 func main() {
+  db, err := sql.Open("mysql", "root:root@tcp(database:3306)/galibot");
+  if err != nil {
+    log.Fatal(err);
+  }
+  defer db.Close();
+
+  rows, err := db.Query("SELECT * FROM users");
+  if err != nil {
+    log.Fatal(err);
+  }
+  defer rows.Close();
+
+  var users []User;
+  for rows.Next() {
+    var user User;
+    if err = rows.Scan(&user.id, &user.name); err != nil {
+      log.Fatal(err);
+    }
+    users = append(users, user);
+  }
+  if err = rows.Err(); err != nil {
+    log.Fatal(err);
+  }
+
+  log.Print("USERS", users);
+
+  return;
+
   credentials := getCredentials(".credentials.json"); //TODO: Configure path
   Bot, err := tgbotapi.NewBotAPI(credentials.Token);
   if err != nil {
