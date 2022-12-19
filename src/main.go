@@ -1,7 +1,7 @@
 package main
 
 import (
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+  tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
   "database/sql"
   _ "github.com/go-sql-driver/mysql"
 
@@ -11,26 +11,27 @@ import (
 	"encoding/json"
   "fmt"
 	"log"
-	"time"
+  "time"
 )
 
-var MyChatID int64 = 1129477471;
+const MyChatID int64 = 1129477471; //TODO: Database
 var CurrIP string;
-
-type PermLvl int;
-const (
-  Admin PermLvl = 0;
-  Allow PermLvl = 1;
-  Block PermLvl = 2;
-)
-var Permissions = map[int64]PermLvl{
-  MyChatID: Admin,
-  5629879871: Admin,
-};
 
 type Credentials struct {
   Token string
 };
+
+type User struct {
+  ChatId int64;
+  Name string;
+  Permissions string; 
+};
+
+func getUser(chatId int64, db *sql.DB) (User, error) {
+  var user User;
+  err := db.QueryRow("SELECT * FROM users WHERE chatid = ?", chatId).Scan(&user.ChatId, &user.Name, &user.Permissions);
+  return user, err;
+}
 
 func getCredentials(fpath string) Credentials {
   data, err := os.ReadFile(fpath); //TODO: Config path
@@ -83,15 +84,21 @@ func ipUpdater(Bot *tgbotapi.BotAPI) {
   }
 }
 
-func command(chatID int64, Message *tgbotapi.Message, Bot *tgbotapi.BotAPI) {
+func command(chatID int64, Message *tgbotapi.Message, Bot *tgbotapi.BotAPI, db *sql.DB) {
   msg := tgbotapi.NewMessage(chatID, "");
   msg.ReplyToMessageID = Message.MessageID;
 
-  if permLvl, ok := Permissions[chatID]; ok && permLvl != Block {
+  user, err := getUser(chatID, db);
+  if err != nil {
+    log.Fatalf("[command] getUser error: %v", err);
+    //TODO: Handle
+  }
+
+  if user.Permissions != "block" {
     switch Message.Command() {
       case "ping": msg.Text = "pong";
       case "ip":
-        if permLvl != Admin {
+        if user.Permissions != "admin" {
           msg.Text = fmt.Sprintf("Unknown command: /%v", Message.Command()); //TODO: Repeated code
           break;
         }
@@ -111,7 +118,7 @@ func command(chatID int64, Message *tgbotapi.Message, Bot *tgbotapi.BotAPI) {
   }
 }
 
-func listenForMessages(Bot *tgbotapi.BotAPI) {
+func listenForMessages(Bot *tgbotapi.BotAPI, db *sql.DB) {
   u := tgbotapi.NewUpdate(0); //TODO: Last update +1
   u.Timeout = 60; //TODO: What?
 
@@ -122,14 +129,9 @@ func listenForMessages(Bot *tgbotapi.BotAPI) {
     log.Printf("[listenForMessages] Received update from: %v", chatID);
 
     if message != nil && message.IsCommand() {
-      command(chatID, message, Bot);
+      command(chatID, message, Bot, db);
     } //TODO: Non-message updates
   }
-}
-
-type User struct {
-  id int64;
-  name string;
 }
 
 func main() {
@@ -138,28 +140,6 @@ func main() {
     log.Fatal(err);
   }
   defer db.Close();
-
-  rows, err := db.Query("SELECT * FROM users");
-  if err != nil {
-    log.Fatal(err);
-  }
-  defer rows.Close();
-
-  var users []User;
-  for rows.Next() {
-    var user User;
-    if err = rows.Scan(&user.id, &user.name); err != nil {
-      log.Fatal(err);
-    }
-    users = append(users, user);
-  }
-  if err = rows.Err(); err != nil {
-    log.Fatal(err);
-  }
-
-  log.Print("USERS", users);
-
-  return;
 
   credentials := getCredentials(".credentials.json"); //TODO: Configure path
   Bot, err := tgbotapi.NewBotAPI(credentials.Token);
@@ -170,7 +150,7 @@ func main() {
   log.Printf("[main] Running as %v", Bot.Self.UserName);
 
   go ipUpdater(Bot);
-  listenForMessages(Bot);
+  listenForMessages(Bot, db);
 }
 
 //TODO: Split into multiple files
