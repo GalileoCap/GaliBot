@@ -23,5 +23,3 @@ go.work
 #************************************************************
 # S: Mine
 
-# Private API Token, ...
-.credentials.json
