@@ -71,10 +71,14 @@ func main() {
   _Bot, err := tgbotapi.NewBotAPI(credentials.Token);
   Bot = _Bot; //A: Rename to make it global
   if err != nil {
-    log.Panicf("[main] Error NewBotAPI: %v", err);
+    log.Fatalf("[main] Error NewBotAPI: %v", err);
   }
   //Bot.Debug = true;
   log.Printf("[main] Running as %v", Bot.Self.UserName);
+
+  if err = registerCommands(); err != nil {
+    log.Fatalf("[main] Error on registerCommands: %v", err);
+  }
 
   go ipUpdater();
   listenForMessages();
