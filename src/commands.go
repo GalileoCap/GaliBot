@@ -17,6 +17,8 @@ type Command struct {
 var Commands map[string]Command = map[string]Command{
   "ping": {Description: "ping", Function: pingCMD},
   "ip": {Description: "ip", Admin: true, Function: ipCMD},
+
+  "todo": {Description: "Show the TODO hub", Function: todoCMD},
 };
 
 func registerCommands() error { //U: Registers all known commands
@@ -24,8 +26,7 @@ func registerCommands() error { //U: Registers all known commands
   for name, command := range Commands {
     commands = append(commands, tgbotapi.BotCommand{Command: name, Description: command.Description});
   }
-  config := tgbotapi.NewSetMyCommands(commands...);
-  _, err := Bot.Request(config);
+  _, err := Bot.Request(tgbotapi.NewSetMyCommands(commands...));
   return err;
 
   //TODO: Scope

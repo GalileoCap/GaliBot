@@ -31,7 +31,7 @@ func listenForMessages() {
   updates := Bot.GetUpdatesChan(u);
 
   for update := range updates {
-    chatID := update.FromChat().ID; msg := update.Message //A: Rename
+    chatID := update.FromChat().ID; msg := update.Message; //A: Rename
     log.Printf("[listenForMessages] Received update from: %v", chatID);
 
     user, err := getUser(chatID);
@@ -42,14 +42,19 @@ func listenForMessages() {
     }
 
     if user.Permissions == "block" {
-      //TODO: Warn
+      //TODO: Warn?
       continue;
     }
 
     if msg != nil && msg.IsCommand() {
       handleCommand(user, msg);
+    } else if update.CallbackQuery != nil {
+      handleCallback(user, update.CallbackQuery);
+    } else {
+      log.Printf("[listenForMessages] Non-message update: %v", update);
+      //TODO: Other non-message updates
     }
 
-    //TODO: Non-message updates
+    //TODO: Better logging
   }
 }
