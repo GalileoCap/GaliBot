@@ -44,6 +44,7 @@ func main() {
     }
   }
 
+  dbInit();
   telegramInit(*apiToken);
 
   receiveUpdates();

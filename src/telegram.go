@@ -25,6 +25,11 @@ func receiveUpdates() {
 
   updates := Bot.GetUpdatesChan(u);
   for update := range updates {
-    log.Printf("[receiveUpdates] New update userID=%v, chatID=%v", update.SentFrom().ID, update.FromChat().ID);
+    log.Printf("[receiveUpdates] New update uid=%v", update.SentFrom().ID);
+    user := dbGetUser(update.SentFrom());
+
+    if user.Permissions == "block" { //A: Ignore them
+      continue;
+    }
   }
 }
