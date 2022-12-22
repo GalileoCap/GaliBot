@@ -17,6 +17,8 @@ func telegramInit(apiToken string) {
 
   //Bot.Debug = Config.Test; //TODO: ?
   log.Printf("[telegramInit] Running as %s", Bot.Self.UserName);
+
+  registerCommands();
 }
 
 func receiveUpdates() {
@@ -31,5 +33,28 @@ func receiveUpdates() {
     if user.Permissions == "block" { //A: Ignore them
       continue;
     }
+
+    if update.Message != nil {
+      if update.Message.IsCommand() {
+        handleCommand(user, update.Message);
+      } else {
+        //TODO: Mode handler
+      }
+    } else if update.CallbackQuery != nil {
+      //TODO: Handle query
+    } else {
+      log.Printf("[receiveUpdates] Unhandled update: %+v", update) //TODO: Print which type rather the entire thing
+    }
   }
+}
+
+func newReply(user User, msg *tgbotapi.Message) tgbotapi.MessageConfig {
+  reply := tgbotapi.NewMessage(user.ID, ""); //TODO: Default text
+  reply.ReplyToMessageID = msg.MessageID; 
+  return reply;
+}
+
+func sendMessage(msg tgbotapi.MessageConfig) error {
+  _, err := Bot.Send(msg);
+  return err;
 }
