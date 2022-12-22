@@ -5,9 +5,10 @@ import (
 
   "encoding/json"
   "strings"
+  "strconv"
   "fmt"
   "log"
-  //"errors"
+  "errors"
 )
 
 type TODOEntry struct {
@@ -28,20 +29,29 @@ func cmdTodo(user *User, msg *tgbotapi.Message, reply *tgbotapi.MessageConfig) e
     tgbotapi.NewInlineKeyboardRow(
       tgbotapi.NewInlineKeyboardButtonData("New Entry", "todoNew;"),
     ),
-    //tgbotapi.NewInlineKeyboardRow(
-      //tgbotapi.NewInlineKeyboardButtonData("List All", "todoList"),
-      //tgbotapi.NewInlineKeyboardButtonData("Random Entry", "todoRandom"),
-    //),
+    tgbotapi.NewInlineKeyboardRow(
+      tgbotapi.NewInlineKeyboardButtonData("List All", "todoList;"),
+      tgbotapi.NewInlineKeyboardButtonData("Random Entry", "todoRandom;"),
+    ),
+    tgbotapi.NewInlineKeyboardRow(
+      tgbotapi.NewInlineKeyboardButtonData("Edit Entry", "todoEdit;"),
+      tgbotapi.NewInlineKeyboardButtonData("Configure", "todoConfig;"),
+    ),
   );
   return nil;
 }
 
-func todoGetEntries(user *User) ([]TODOEntry, error) {
+func todoGetEntries(user *User, page int) ([]TODOEntry, error) {
   entries, present := TODODb[user.ID];
   if !present {
     return []TODOEntry{}, nil;
   }
-  return entries, nil;
+  return entries[min(page * 6, len(entries)) : min((page + 1) * 6, len(entries))], nil; //TODO: Simplify
+}
+
+func todoGetEntry(user *User, id int64) TODOEntry {
+  entries, _ := todoGetEntries(user, 0); //TODO
+  return entries[0];
 }
 
 func todoAddEntry(user *User, entry *TODOEntry) error {
@@ -54,6 +64,9 @@ func todoAddEntry(user *User, entry *TODOEntry) error {
 
   return nil;
 }
+
+//************************************************************
+//S: todoNew
 
 func todoNewGetEntry(user *User) TODOEntry {
   var entry TODOEntry;
@@ -113,6 +126,7 @@ func todoNewFoo(user *User, entry *TODOEntry, edit *tgbotapi.EditMessageTextConf
 
   switch entry.Step {
   case -1: //A: Back to hub
+    edit.ReplyMarkup = nil;
     //TODO
 
   case 0: //A: Title
@@ -248,4 +262,112 @@ func modeTodoNewTags(user *User, msg *tgbotapi.Message) {
   if err := sendEdit(edit); err != nil {
     log.Printf("[modeTodoNewTags/sendEdit] Error: %v, %+v", err, edit);
   }
+}
+
+//************************************************************
+//S: todoList
+
+type TODOListCache struct {
+  Page int;
+};
+
+func todoListGetCache(user *User) TODOListCache { //TODO: Generic read from cache
+  var cache TODOListCache;
+  value, present := UserCache[user.ID];
+  if !present {
+    value = []byte("{}");
+  }
+  json.Unmarshal(value, &cache);
+  return cache;
+}
+
+func todoListEntry(entry TODOEntry) tgbotapi.InlineKeyboardButton {
+  return tgbotapi.NewInlineKeyboardButtonData(
+    fmt.Sprintf("%v (%v, %v)", entry.Title, entry.Urgency, entry.Length),
+    fmt.Sprintf("todoEntry;%v", entry.ID),
+  );
+}
+
+func todoListRow(entries []TODOEntry, i int) []tgbotapi.InlineKeyboardButton {
+  if 2*i+1 < len(entries) {
+    return tgbotapi.NewInlineKeyboardRow(
+      todoListEntry(entries[2*i]), todoListEntry(entries[2*i+1]),
+    );
+  } else {
+    return tgbotapi.NewInlineKeyboardRow(
+      todoListEntry(entries[2*i]),
+    );
+  }
+}
+
+func cbTodoList(user *User, data string, msg *tgbotapi.Message, edit *tgbotapi.EditMessageTextConfig) error {
+  cache := todoListGetCache(user);
+
+  parts := strings.Split(data, ";");
+  switch parts[0] {
+  case "": //A: First time
+    cache.Page = 0;
+  case "pageBack":
+    cache.Page = max(cache.Page - 1, 0);
+  case "pageNext":
+    cache.Page++; //TODO: Limit when you've reached the end
+  }
+  
+  entries, _ := todoGetEntries(user, cache.Page);
+
+  edit.Text = fmt.Sprintf("Page %v/X", cache.Page+1); //TODO: Total number of pages
+  //TODO: Description and query
+
+  markup := make([][]tgbotapi.InlineKeyboardButton, 0, 5); 
+  for i := 0; i < (len(entries) / 2); i++ {
+    markup = append(markup, todoListRow(entries, i));
+  }
+  if len(entries) % 2 != 0 { //A: There's a row of only one element
+    markup = append(markup, todoListRow(entries, len(entries) / 2));
+  }
+  markup = append(markup, tgbotapi.NewInlineKeyboardRow(
+    tgbotapi.NewInlineKeyboardButtonData("Previous Page", "todoList;pageBack"), //TODO: Not on page 0
+    tgbotapi.NewInlineKeyboardButtonData("Edit Query", "todoList;query"),
+    tgbotapi.NewInlineKeyboardButtonData("Next Page", "todoList;pageNext"),
+  ));
+  markup = append(markup, tgbotapi.NewInlineKeyboardRow(
+    tgbotapi.NewInlineKeyboardButtonData("Back", "todoHub;"),
+  ));
+
+  *edit.ReplyMarkup = tgbotapi.InlineKeyboardMarkup{InlineKeyboard: markup};
+
+  //TODO: Paging
+
+  return nil;
+}
+
+//************************************************************
+//S: todoEntry
+
+func cbTodoEntry(user *User, data string, msg *tgbotapi.Message, edit *tgbotapi.EditMessageTextConfig) error {
+  parts := strings.Split(data, ";");
+  if len(parts) != 1 {
+    return errors.New(fmt.Sprintf("[cbTodoEntry] Invalid data: %v", data));
+  }
+  id, err := strconv.ParseInt(parts[0], 10, 64);
+  if err != nil {
+    return err;
+  }
+  entry := todoGetEntry(user, id);
+
+  edit.Text = fmt.Sprintf(
+    "- Title: %v\n- Description: %v\n- Tags: %v\n- Urgency: %v\n- Length: %v\n- ID: %v\n",
+    entry.Title, entry.Description, entry.Tags, entry.Urgency, entry.Length, entry.ID,
+  );
+  *edit.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(
+    tgbotapi.NewInlineKeyboardRow(
+      tgbotapi.NewInlineKeyboardButtonData("Delete", "todoEntry;delete"),
+      tgbotapi.NewInlineKeyboardButtonData("Edit", "todoEntry;edit"),
+    ),
+    tgbotapi.NewInlineKeyboardRow(
+      tgbotapi.NewInlineKeyboardButtonData("Back", "todoBack;"),
+    ),
+  );
+
+  return nil;
 }

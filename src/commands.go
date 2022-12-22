@@ -86,8 +86,6 @@ func cmdCancel(user *User, msg *tgbotapi.Message, reply *tgbotapi.MessageConfig)
 }
 
 func cmdTest(user *User, msg *tgbotapi.Message, reply *tgbotapi.MessageConfig) error {
-  entries, _ := todoGetEntries(user);
-  reply.Text = fmt.Sprintf("%+v", entries);
   return nil;
 }
 

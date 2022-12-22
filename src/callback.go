@@ -14,6 +14,8 @@ type Callback struct {
 };
 var Callbacks map[string]Callback = map[string]Callback{ //U: Add all possible callbacks here
   "todoNew": {Function: cbTodoNew},
+  "todoList": {Function: cbTodoList},
+  "todoEntry": {Function: cbTodoEntry},
 };
 
 func handleCallback(user *User, query *tgbotapi.CallbackQuery) {

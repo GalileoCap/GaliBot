@@ -16,6 +16,20 @@ func contains(array []int64, value int64) bool {
 	return false;
 }
 
+func max(x int, y int) int {
+  if x > y {
+    return x;
+  }
+  return y;
+}
+
+func min(x int, y int) int {
+  if x < y {
+    return x;
+  }
+  return y;
+}
+
 func updateIP() (bool, error) {
   resp, err := http.Get("https://api.ipify.org?format=text");
   if err != nil {
