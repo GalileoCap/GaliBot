@@ -1,10 +1,10 @@
-package main
+package main;
 
 import (
   tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 
   "fmt"
-	"log"
+  "log"
   //"errors"
 )
 
@@ -12,68 +12,69 @@ type Command struct {
   Description string;
   Admin bool; //U: Admin required to use this command
 
-  Function func(DBUser, *tgbotapi.Message, *tgbotapi.MessageConfig) error;
+  Function func(User, *tgbotapi.Message, *tgbotapi.MessageConfig) error;
 };
-var Commands map[string]Command = map[string]Command{
-  "ping": {Description: "ping", Function: pingCMD},
-  "ip": {Description: "ip", Admin: true, Function: ipCMD},
+var Commands map[string]Command = map[string]Command{ //U: Add commands to be registered here
+  "ping": {Description: "Ping me", Function: cmdPing},
+  "ip": {Description: "...", Admin: true, Function: cmdIP},
 };
 
-func registerCommands() error { //U: Registers all known commands
+func registerCommands() { //U: Registers all known commands
   commands := make([]tgbotapi.BotCommand, 0, len(Commands));
   for name, command := range Commands {
     commands = append(commands, tgbotapi.BotCommand{Command: name, Description: command.Description});
   }
-  config := tgbotapi.NewSetMyCommands(commands...);
-  _, err := Bot.Request(config);
-  return err;
+
+  _, err := Bot.Request(tgbotapi.NewSetMyCommands(commands...));
+  if err != nil {
+    log.Fatalf("[registerCommands] %v", err); //TODO: Is this fatal? Maybe send message to admin
+  }
 
   //TODO: Scope
   //TODO: Simplify
 }
 
-func pingCMD(user DBUser, msg *tgbotapi.Message, reply *tgbotapi.MessageConfig) error {
-  reply.Text = "pong";
-  return nil;
-}
-
-func ipCMD(user DBUser, msg *tgbotapi.Message, reply *tgbotapi.MessageConfig) error {
-  change, err := getIP();
-  if err == nil {
-    reply.Text = fmt.Sprintf("IP (%v): %v", change, CurrIP);
-  }
-  return err;
-}
-
-func handleCommand(user DBUser, msg *tgbotapi.Message) {
+func handleCommand(user User, msg *tgbotapi.Message) {
   var err error;
+  reply := newReply(user, msg); 
 
-  reply := tgbotapi.NewMessage(user.ChatId, "");
-  reply.ReplyToMessageID = msg.MessageID;
-
-  cmd, prs := Commands[msg.Command()];
-  if !prs {
-    reply.Text = fmt.Sprintf("Unknown command: /%v, try asking for /help", msg.Command());
+  cmd, present := Commands[msg.Command()];
+  if !present {
+    reply.Text = fmt.Sprintf("Unknown command /%v, try asking for /help", msg.Command());
     goto SEND;
   }
 
   if cmd.Admin && user.Permissions != "admin" {
-    reply.Text = fmt.Sprintf("You don't have the correct permissions for the command: /%v", msg.Command());
+    reply.Text = fmt.Sprintf("You don't have the correct permissions for the command /%v", msg.Command());
     goto SEND;
   }
 
   err = cmd.Function(user, msg, &reply);
   if err != nil { //A: Reset the reply
-    log.Printf("[handleCommand] Error: %v", err);
-    reply = tgbotapi.NewMessage(user.ChatId, "There was an error"); 
-    reply.ReplyToMessageID = msg.MessageID;
+    log.Printf("[handleCommand] Error on handle: %v", err);
 
-    //TODO: Identifier
+    reply = newReply(user, msg); //A: Reset the reply
+    reply.Text = fmt.Sprintf("There was an error handling the command /%v.\nPlease retry in a bit, or ask your local admin for help", msg.Command());
+
+    //TODO: Error identifier
   }
 
 SEND:
-  _, err = Bot.Send(reply);
+  err = sendMessage(reply);
   if err != nil {
-    log.Printf("[handleCommand] Error sending message: %v", err);
+    log.Printf("[handleCommand] Error on send: %v", err);
   }
+}
+
+func cmdPing(user User, msg *tgbotapi.Message, reply *tgbotapi.MessageConfig) error {
+  reply.Text = "pong";
+  return nil;
+}
+
+func cmdIP(user User, msg *tgbotapi.Message, reply *tgbotapi.MessageConfig) error {
+  changed, err := updateIP();
+  if err == nil {
+    reply.Text = fmt.Sprintf("IP (%v): %v", changed, CurrIP);
+  }
+  return err;
 }

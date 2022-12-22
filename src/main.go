@@ -1,85 +1,55 @@
 package main
 
 import (
-  tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-  "database/sql"
-  _ "github.com/go-sql-driver/mysql"
-
-	"os"
-	"io/ioutil" //TODO: Use os
-	"net/http"
 	"encoding/json"
+	"flag"
 	"log"
-)
+	"os"
+);
 
-var DB *sql.DB;
-var Bot *tgbotapi.BotAPI;
-
-const MyChatID int64 = 1129477471; //TODO: Database
-var CurrIP string;
-
-type Credentials struct {
+type ConfigT struct {
   Token string
+  TestToken string `json=",omitempty"`
+
+  Test bool
+
+  Admin []int64 `json=",omitempty"`
+  Block []int64 `json=",omitempty"`
 };
+var Config ConfigT;
 
-func getCredentials(fpath string) Credentials {
-  data, err := os.ReadFile(fpath); //TODO: Config path
+func parseConfig(path string, test bool) {
+  data, err := os.ReadFile(path);
   if err != nil {
-    log.Fatalf("[getCredentials] Error opening \"%v\": %v", fpath, err);
+    log.Fatalf("[readToken] %v", err);
   }
 
-  var credentials Credentials;
-  err = json.Unmarshal(data, &credentials);
-  if err != nil {
-    log.Fatalf("[getCredentials] Error decoding \"%v\": %v", fpath, err);
+  if err = json.Unmarshal(data, &Config); err != nil {
+    log.Fatalf("[readToken] %v", err);
   }
 
-  return credentials;
+  Config.Test = test;
 }
 
-func getIP() (bool, error) {
-  resp, err := http.Get("https://api.ipify.org?format=text");
-  if err != nil {
-    log.Printf("[ipUpdater] Error getting IP: %v", err);
-    return false, err;
-  }
-  defer resp.Body.Close();
-  
-  newIP_b, err := ioutil.ReadAll(resp.Body);
-  if err != nil {
-    log.Printf("[ipUpdater] Error reading response body: %v", err);
-    return false, err;
-  }
-  newIP := string(newIP_b);
-  prevIP := CurrIP;
-  CurrIP = newIP;
-
-  return prevIP != newIP, nil;
-} 
-
 func main() {
-  //A: Init database
-  _DB, err := sql.Open("mysql", "root:root@tcp(database:3306)/galibot");
-  DB = _DB; //A: Rename to make it global
-  if err != nil {
-    log.Fatal(err);
-  }
-  defer DB.Close();
+  //A: Register command flags
+  configPath := flag.String("configPath", "config.json", "Path to the config file");
+  apiToken := flag.String("token", "", "Your bot's API token (precedence over config and test)");
+  test := flag.Bool("test", false, "Run in test mode (requires TestToken in config or --apiToken, precedence over config)");
+  flag.Parse();
 
-  //A: Init bot
-  credentials := getCredentials(".credentials.json"); //TODO: Configure path
-  _Bot, err := tgbotapi.NewBotAPI(credentials.Token);
-  Bot = _Bot; //A: Rename to make it global
-  if err != nil {
-    log.Fatalf("[main] Error NewBotAPI: %v", err);
-  }
-  //Bot.Debug = true;
-  log.Printf("[main] Running as %v", Bot.Self.UserName);
+  parseConfig(*configPath, *test);
 
-  if err = registerCommands(); err != nil {
-    log.Fatalf("[main] Error on registerCommands: %v", err);
+  if *apiToken == "" { //A: Make sure to have the API token
+    if Config.Test {
+      *apiToken = Config.TestToken;
+    } else {
+      *apiToken = Config.Token;
+    }
   }
 
-  go ipUpdater();
-  listenForMessages();
+  dbInit();
+  telegramInit(*apiToken);
+
+  receiveUpdates();
 }

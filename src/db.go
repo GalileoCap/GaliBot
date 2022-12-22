@@ -1,18 +1,59 @@
-package main
+package main;
+
+/*
+ * TODO:
+ *  For now (during initial testing) the database is kept in memory. Will be using SQL later
+ */
 
 import (
-  //"database/sql"
-  //_ "github.com/go-sql-driver/mysql"
-)
+  tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 
-type DBUser struct {
-  ChatId int64;
-  Name string;
-  Permissions string; 
+  "log"
+);
+
+type ModeT int;
+const (
+  Normal ModeT = iota
+);
+
+type User struct {
+  ID int64;
+  FirstName string;
+  LastName string `json=",omitempty"`;
+  UserName string `json=",omitempty"`;
+
+  Permissions string; //U: admin/allow/block
 };
+var Users map[int64]User;
 
-func getUser(chatId int64) (DBUser, error) {
-  var user DBUser;
-  err := DB.QueryRow("SELECT * FROM users WHERE chatid = ?", chatId).Scan(&user.ChatId, &user.Name, &user.Permissions);
-  return user, err;
+func dbInit() {
+  Users = make(map[int64]User);
+}
+
+func dbGetUser(requestUser *tgbotapi.User) User {
+  user, present := Users[requestUser.ID];
+
+  if !present { //A: Create it
+    user = User{
+      ID: requestUser.ID,
+      FirstName: requestUser.FirstName,
+      LastName: requestUser.LastName,
+      UserName: requestUser.UserName,
+    };
+
+    //A: Set permissions
+    if contains(Config.Admin, user.ID) { //A: Is an admin
+      user.Permissions = "admin";
+    } else if contains(Config.Block, user.ID) { //A: Is blocked
+      user.Permissions = "block";
+    } else { //A: Default
+      user.Permissions = "allow";
+    }
+    //TODO: Simplify
+
+    log.Printf("[dbGetUser] New user: %+v", user);
+    Users[requestUser.ID] = user; //A: Save it
+  }
+
+  return user;
 }

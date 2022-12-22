@@ -1,0 +1,11 @@
+{
+  "Token": "Your main API token here"
+  "TestToken": "Your test API token here",
+
+  "Admin": [
+    List of User ID's (as ints)
+  ],
+  "Block": [
+    List of User ID's (as ints)
+  ]
+}
