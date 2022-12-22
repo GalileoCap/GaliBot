@@ -36,20 +36,23 @@ func receiveUpdates() {
 
     if update.Message != nil {
       if update.Message.IsCommand() {
-        handleCommand(user, update.Message);
+        handleCommand(&user, update.Message);
       } else {
-        //TODO: Mode handler
+        handleMode(&user, update.Message);
       }
     } else if update.CallbackQuery != nil {
       //TODO: Handle query
     } else {
       log.Printf("[receiveUpdates] Unhandled update: %+v", update) //TODO: Print which type rather the entire thing
+      continue;
     }
+
+    dbSetUser(&user);
   }
 }
 
-func newReply(user User, msg *tgbotapi.Message) tgbotapi.MessageConfig {
-  reply := tgbotapi.NewMessage(user.ID, ""); //TODO: Default text
+func newReply(user *User, msg *tgbotapi.Message) tgbotapi.MessageConfig {
+  reply := tgbotapi.NewMessage(user.ID, "Can't be empty"); //TODO: Default text
   reply.ReplyToMessageID = msg.MessageID; 
   return reply;
 }

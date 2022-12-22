@@ -2,7 +2,7 @@ package main;
 
 /*
  * TODO:
- *  For now (during initial testing) the database is kept in memory. Will be using SQL later
+ *  - For now (during initial testing) the database is kept in memory. Will be using SQL later
  */
 
 import (
@@ -23,6 +23,7 @@ type User struct {
   UserName string `json=",omitempty"`;
 
   Permissions string; //U: admin/allow/block
+  Mode string;
 };
 var Users map[int64]User;
 
@@ -39,6 +40,8 @@ func dbGetUser(requestUser *tgbotapi.User) User {
       FirstName: requestUser.FirstName,
       LastName: requestUser.LastName,
       UserName: requestUser.UserName,
+
+      Mode: "",
     };
 
     //A: Set permissions
@@ -56,4 +59,8 @@ func dbGetUser(requestUser *tgbotapi.User) User {
   }
 
   return user;
+}
+
+func dbSetUser(user *User) {
+  Users[user.ID] = *user;
 }
