@@ -10,7 +10,11 @@ import (
 type ConfigT struct {
   Token string
   TestToken string `json=",omitempty"`
+
   Test bool
+
+  Admin []int64 `json=",omitempty"`
+  Block []int64 `json=",omitempty"`
 };
 var Config ConfigT;
 

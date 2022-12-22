@@ -34,17 +34,24 @@ func dbGetUser(requestUser *tgbotapi.User) User {
   user, present := Users[requestUser.ID];
 
   if !present { //A: Create it
-    log.Printf("[dbGetUser] New user uid=%v", requestUser.ID);
-
     user = User{
       ID: requestUser.ID,
       FirstName: requestUser.FirstName,
       LastName: requestUser.LastName,
       UserName: requestUser.UserName,
-
-      Permissions: "allow", //A: Default //TODO: Config list of admins
     };
 
+    //A: Set permissions
+    if contains(Config.Admin, user.ID) { //A: Is an admin
+      user.Permissions = "admin";
+    } else if contains(Config.Block, user.ID) { //A: Is blocked
+      user.Permissions = "block";
+    } else { //A: Default
+      user.Permissions = "allow";
+    }
+    //TODO: Simplify
+
+    log.Printf("[dbGetUser] New user: %+v", user);
     Users[requestUser.ID] = user; //A: Save it
   }
 
