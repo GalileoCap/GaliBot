@@ -26,11 +26,13 @@ type User struct {
   Mode string;
 };
 var Users map[int64]User;
+var UserCache map[int64][]byte; //TODO: Timedmap
 
 var TODODb map[int64][]TODOEntry;
 
 func dbInit() {
   Users = make(map[int64]User);
+  UserCache = make(map[int64][]byte);
   TODODb = make(map[int64][]TODOEntry);
 }
 

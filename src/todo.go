@@ -11,12 +11,14 @@ import (
 )
 
 type TODOEntry struct {
+  ID int64;
   Title string `json:",omitempty"`;
   Description string `json:",omitempty"`;
   Urgency string `json:",omitempty"`;
   Length string `json:",omitempty"`;
   Tags []string `json:",omitempty"`;
 
+  MessageID int64;
   Step int;
 };
 
@@ -48,22 +50,38 @@ func todoAddEntry(user *User, entry *TODOEntry) error {
     TODODb[user.ID] = []TODOEntry{ *entry };
   }
   TODODb[user.ID] = append(entries, *entry);
+  //TODO: Entry ID
 
   return nil;
 }
 
-func todoNewGetEntry(msg *tgbotapi.Message) TODOEntry {
-  var entry TODOEntry; //TODO: Get entry from text
-  parts := strings.Split(msg.Text, "\n");
-  json.Unmarshal([]byte(parts[len(parts) - 1]), &entry);
+func todoNewGetEntry(user *User) TODOEntry {
+  var entry TODOEntry;
+  value, present := UserCache[user.ID];
+  if !present {
+    value = []byte("{}");
+  }
+  json.Unmarshal(value, &entry);
   return entry;
+}
+
+func todoNewSetEntry(user *User, entry *TODOEntry) {
+  bytes, _ := json.Marshal(entry);
+  UserCache[user.ID] = bytes;
+}
+
+func todoNewEdit(user *User, entry *TODOEntry) tgbotapi.EditMessageTextConfig {
+  return tgbotapi.NewEditMessageTextAndMarkup(user.ID, int(entry.MessageID), "", tgbotapi.NewInlineKeyboardMarkup());
 }
 
 func cbTodoNew(user *User, data string, msg *tgbotapi.Message, edit *tgbotapi.EditMessageTextConfig) error {
   //TODO: Reply with title -> description ? -> Tags ? -> Urgency -> Length -> Edit/Send, Back in every step
-  entry := todoNewGetEntry(msg);
+  entry := todoNewGetEntry(user);
 
   switch parts := strings.Split(data, ";"); parts[0] {
+  case "": //A: Start
+    entry = TODOEntry{MessageID: int64(msg.MessageID)}; //A: Reset
+
   case "edit":
     entry.Step = 0;
   case "back":
@@ -77,16 +95,18 @@ func cbTodoNew(user *User, data string, msg *tgbotapi.Message, edit *tgbotapi.Ed
     entry.Length = parts[1];
     entry.Step++;
   case "confirm":
-    err := todoAddEntry(user, &entry);
-    //TODO: Change message
-    return err;
+    if err := todoAddEntry(user, &entry); err != nil {
+      return err;
+    }
+    entry.Step++;
   }
+  todoNewSetEntry(user, &entry); //A: Cache the entry
 
-  foo(user, &entry, edit);
+  todoNewFoo(user, &entry, edit);
   return nil;
 }
 
-func foo(user *User, entry *TODOEntry, edit *tgbotapi.EditMessageTextConfig) {
+func todoNewFoo(user *User, entry *TODOEntry, edit *tgbotapi.EditMessageTextConfig) {
   var action string;
   backButton := tgbotapi.NewInlineKeyboardButtonData("Back", "todoNew;back");
   nextButton := tgbotapi.NewInlineKeyboardButtonData("Next", "todoNew;next");
@@ -160,35 +180,38 @@ func foo(user *User, entry *TODOEntry, edit *tgbotapi.EditMessageTextConfig) {
     );
 
   case 5: //A: Edit/Send
-    entryB, _ := json.Marshal(entry);
-    edit.Text = fmt.Sprintf("Creating new TODO entry (final step!).\nPlease confirm or edit the information:\n\t- Title: \"%s\"\n\t- Description: \"%s\"\n\t- Tags: %v\n\t- Urgency: %s\n\t- Length: %s\n%s", entry.Title, entry.Description, entry.Tags, entry.Urgency, entry.Length, string(entryB));
+    edit.Text = fmt.Sprintf("Creating new TODO entry (final step!).\nPlease confirm or edit the information:\n\t- Title: \"%s\"\n\t- Description: \"%s\"\n\t- Tags: %v\n\t- Urgency: %s\n\t- Length: %s", entry.Title, entry.Description, entry.Tags, entry.Urgency, entry.Length);
     *edit.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(
       tgbotapi.NewInlineKeyboardRow(
         tgbotapi.NewInlineKeyboardButtonData("Edit", "todoNew;edit"),
         tgbotapi.NewInlineKeyboardButtonData("Confirm", "todoNew;confirm"),
       ),
     );
+
+    return;
+
+  case 6: //A: Confirmed
+    edit.Text = fmt.Sprintf("Successfully created new TODO entry!\nInformation:\n\t- Title: \"%s\"\n\t- Description: \"%s\"\n\t- Tags: %v\n\t- Urgency: %s\n\t- Length: %s\nYou can use the unique ID %v to edit/delete it later.", entry.Title, entry.Description, entry.Tags, entry.Urgency, entry.Length, entry.ID);
+    edit.ReplyMarkup = nil;
+
     return;
   }
 
-  entryB, _ := json.Marshal(entry);
-  edit.Text = fmt.Sprintf("Creating new TODO entry (step %v/5).\n\n%v\n\nYou'll be able to edit it at the end, also you can ignore this message at any time to cancel.\n%s", entry.Step, action, string(entryB));
+  edit.Text = fmt.Sprintf("Creating new TODO entry (step %v/5).\n\n%v\n\nYou'll be able to edit it at the end, also you can ignore this message at any time to cancel.", entry.Step+1, action);
   //TODO: Warn about illegal characters
+
 }
 
 func modeTodoNewTitle(user *User, msg *tgbotapi.Message) {
-  if msg.ReplyToMessage == nil {
-    //TODO: Didn't reply
-    return;
-  }
   //TODO: Check length and characters
 
-  entry := todoNewGetEntry(msg.ReplyToMessage);
+  entry := todoNewGetEntry(user);
   entry.Title = msg.Text;
   entry.Step++;
+  todoNewSetEntry(user, &entry); //A: Cache the entry
 
-  edit := newEdit(user, msg.ReplyToMessage);
-  foo(user, &entry, &edit);
+  edit := todoNewEdit(user, &entry);
+  todoNewFoo(user, &entry, &edit);
 
   if err := sendEdit(edit); err != nil {
     log.Printf("[modeTodoNewTitle/sendEdit] Error: %v, %+v", err, edit);
@@ -196,18 +219,15 @@ func modeTodoNewTitle(user *User, msg *tgbotapi.Message) {
 }
 
 func modeTodoNewDescription(user *User, msg *tgbotapi.Message) {
-  if msg.ReplyToMessage == nil {
-    //TODO: Didn't reply
-    return;
-  }
   //TODO: Check length and characters
 
-  entry := todoNewGetEntry(msg.ReplyToMessage);
+  entry := todoNewGetEntry(user);
   entry.Description = msg.Text;
   entry.Step++;
+  todoNewSetEntry(user, &entry); //A: Cache the entry
 
-  edit := newEdit(user, msg.ReplyToMessage);
-  foo(user, &entry, &edit);
+  edit := todoNewEdit(user, &entry);
+  todoNewFoo(user, &entry, &edit);
 
   if err := sendEdit(edit); err != nil {
     log.Printf("[modeTodoNewDescription/sendEdit] Error: %v, %+v", err, edit);
@@ -215,18 +235,15 @@ func modeTodoNewDescription(user *User, msg *tgbotapi.Message) {
 }
 
 func modeTodoNewTags(user *User, msg *tgbotapi.Message) {
-  if msg.ReplyToMessage == nil {
-    //TODO: Didn't reply
-    return;
-  }
   //TODO: Check length and characters
 
-  entry := todoNewGetEntry(msg.ReplyToMessage);
+  entry := todoNewGetEntry(user);
   entry.Tags = strings.Split(msg.Text, ",");
   entry.Step++;
+  todoNewSetEntry(user, &entry); //A: Cache the entry
 
-  edit := newEdit(user, msg.ReplyToMessage);
-  foo(user, &entry, &edit);
+  edit := todoNewEdit(user, &entry);
+  todoNewFoo(user, &entry, &edit);
 
   if err := sendEdit(edit); err != nil {
     log.Printf("[modeTodoNewTags/sendEdit] Error: %v, %+v", err, edit);
