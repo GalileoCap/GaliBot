@@ -1,11 +1,10 @@
 package main
 
 import (
-	"log"
-
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+
 	//"fmt"
-	//"log"
+  "log"
 	//"errors"
 )
 
@@ -14,7 +13,10 @@ type Mode struct {
 };
 var Modes map[string]Mode = map[string]Mode{ //U: Add all possible modes here
   "": {Function: modeDefault},
-  "test": {Function: modeTest},
+
+  "todoNewTitle": {Function: modeTodoNewTitle},
+  "todoNewDescription": {Function: modeTodoNewDescription},
+  "todoNewTags": {Function: modeTodoNewTags},
 };
 
 func handleMode(user *User, msg *tgbotapi.Message) {
@@ -28,16 +30,14 @@ func handleMode(user *User, msg *tgbotapi.Message) {
   mode.Function(user, msg);
 }
 
+func enterMode(user *User, mode string) {
+  user.Mode = mode;
+}
+
 func cancelMode(user *User) {
   user.Mode = "";
 }
 
 func modeDefault(user *User, msg *tgbotapi.Message) {
   //A: Ignore regular messages
-}
-
-func modeTest(user *User, msg *tgbotapi.Message) {
-  reply := newReply(user, msg);
-  reply.Text = msg.Text;
-  sendMessage(reply);
 }

@@ -21,6 +21,7 @@ var Commands map[string]Command = map[string]Command{ //U: Add commands to be re
   "ping": {Description: "Ping me", Function: cmdPing},
   "cancel": {Description: "Leave the current mode", Function: cmdCancel},
 
+  "todo": {Description: "Get the TODO hub", Function: cmdTodo},
   "ip": {Description: "...", Admin: true, Function: cmdIP},
 };
 
@@ -85,8 +86,8 @@ func cmdCancel(user *User, msg *tgbotapi.Message, reply *tgbotapi.MessageConfig)
 }
 
 func cmdTest(user *User, msg *tgbotapi.Message, reply *tgbotapi.MessageConfig) error {
-  reply.Text = "Entered mode: test";
-  user.Mode = "test";
+  entries, _ := todoGetEntries(user);
+  reply.Text = fmt.Sprintf("%+v", entries);
   return nil;
 }
 

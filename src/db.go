@@ -27,8 +27,11 @@ type User struct {
 };
 var Users map[int64]User;
 
+var TODODb map[int64][]TODONewEntry;
+
 func dbInit() {
   Users = make(map[int64]User);
+  TODODb = make(map[int64][]TODONewEntry);
 }
 
 func dbGetUser(requestUser *tgbotapi.User) User {
