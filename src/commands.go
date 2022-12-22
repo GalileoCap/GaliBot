@@ -15,7 +15,8 @@ type Command struct {
   Function func(User, *tgbotapi.Message, *tgbotapi.MessageConfig) error;
 };
 var Commands map[string]Command = map[string]Command{ //U: Add commands to be registered here
-  "ping": {Description: "ping", Function: cmdPing},
+  "ping": {Description: "Ping me", Function: cmdPing},
+  "ip": {Description: "...", Admin: true, Function: cmdIP},
 };
 
 func registerCommands() { //U: Registers all known commands
@@ -68,4 +69,12 @@ SEND:
 func cmdPing(user User, msg *tgbotapi.Message, reply *tgbotapi.MessageConfig) error {
   reply.Text = "pong";
   return nil;
+}
+
+func cmdIP(user User, msg *tgbotapi.Message, reply *tgbotapi.MessageConfig) error {
+  changed, err := updateIP();
+  if err == nil {
+    reply.Text = fmt.Sprintf("IP (%v): %v", changed, CurrIP);
+  }
+  return err;
 }
