@@ -10,7 +10,7 @@ import (
   //"errors"
 )
 
-type TODONewEntry struct {
+type TODOEntry struct {
   Title string `json:",omitempty"`;
   Description string `json:",omitempty"`;
   Urgency string `json:",omitempty"`;
@@ -34,26 +34,26 @@ func cmdTodo(user *User, msg *tgbotapi.Message, reply *tgbotapi.MessageConfig) e
   return nil;
 }
 
-func todoGetEntries(user *User) ([]TODONewEntry, error) {
+func todoGetEntries(user *User) ([]TODOEntry, error) {
   entries, present := TODODb[user.ID];
   if !present {
-    return []TODONewEntry{}, nil;
+    return []TODOEntry{}, nil;
   }
   return entries, nil;
 }
 
-func todoAddEntry(user *User, entry *TODONewEntry) error {
+func todoAddEntry(user *User, entry *TODOEntry) error {
   entries, present := TODODb[user.ID];
   if !present {
-    TODODb[user.ID] = []TODONewEntry{ *entry };
+    TODODb[user.ID] = []TODOEntry{ *entry };
   }
   TODODb[user.ID] = append(entries, *entry);
 
   return nil;
 }
 
-func todoNewGetEntry(msg *tgbotapi.Message) TODONewEntry {
-  var entry TODONewEntry; //TODO: Get entry from text
+func todoNewGetEntry(msg *tgbotapi.Message) TODOEntry {
+  var entry TODOEntry; //TODO: Get entry from text
   parts := strings.Split(msg.Text, "\n");
   json.Unmarshal([]byte(parts[len(parts) - 1]), &entry);
   return entry;
@@ -86,7 +86,7 @@ func cbTodoNew(user *User, data string, msg *tgbotapi.Message, edit *tgbotapi.Ed
   return nil;
 }
 
-func foo(user *User, entry *TODONewEntry, edit *tgbotapi.EditMessageTextConfig) {
+func foo(user *User, entry *TODOEntry, edit *tgbotapi.EditMessageTextConfig) {
   var action string;
   backButton := tgbotapi.NewInlineKeyboardButtonData("Back", "todoNew;back");
   nextButton := tgbotapi.NewInlineKeyboardButtonData("Next", "todoNew;next");
@@ -184,7 +184,6 @@ func modeTodoNewTitle(user *User, msg *tgbotapi.Message) {
   //TODO: Check length and characters
 
   entry := todoNewGetEntry(msg.ReplyToMessage);
-  log.Printf("aaa %+v", entry);
   entry.Title = msg.Text;
   entry.Step++;
 
