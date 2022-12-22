@@ -43,4 +43,8 @@ func main() {
       *apiToken = Config.Token;
     }
   }
+
+  telegramInit(*apiToken);
+
+  receiveUpdates();
 }
