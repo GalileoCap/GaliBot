@@ -36,25 +36,43 @@ func receiveUpdates() {
 
     if update.Message != nil {
       if update.Message.IsCommand() {
-        handleCommand(user, update.Message);
+        handleCommand(&user, update.Message);
       } else {
-        //TODO: Mode handler
+        handleMode(&user, update.Message);
       }
     } else if update.CallbackQuery != nil {
-      //TODO: Handle query
+      handleCallback(&user, update.CallbackQuery);
     } else {
       log.Printf("[receiveUpdates] Unhandled update: %+v", update) //TODO: Print which type rather the entire thing
+      continue;
     }
+
+    dbSetUser(&user);
   }
 }
 
-func newReply(user User, msg *tgbotapi.Message) tgbotapi.MessageConfig {
-  reply := tgbotapi.NewMessage(user.ID, ""); //TODO: Default text
+func newReply(user *User, msg *tgbotapi.Message) tgbotapi.MessageConfig {
+  reply := tgbotapi.NewMessage(user.ID, "Can't be empty"); //TODO: Default text
   reply.ReplyToMessageID = msg.MessageID; 
   return reply;
 }
 
+func newEdit(user *User, msg *tgbotapi.Message) tgbotapi.EditMessageTextConfig {
+  edit := tgbotapi.NewEditMessageTextAndMarkup(user.ID, msg.MessageID, msg.Text, tgbotapi.InlineKeyboardMarkup{});
+  if msg.ReplyMarkup != nil { //A: Only copy the original if it exists
+    *edit.ReplyMarkup = *msg.ReplyMarkup;
+  } else { //A: Otherwise remove the empty one //NOTE: tgbotapi forces an ReplyMarkup on New
+    edit.ReplyMarkup = nil;
+  }
+  return edit;
+}
+
 func sendMessage(msg tgbotapi.MessageConfig) error {
   _, err := Bot.Send(msg);
+  return err;
+}
+
+func sendEdit(edit tgbotapi.EditMessageTextConfig) error {
+  _, err := Bot.Send(edit);
   return err;
 }

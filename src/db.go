@@ -2,7 +2,7 @@ package main;
 
 /*
  * TODO:
- *  For now (during initial testing) the database is kept in memory. Will be using SQL later
+ *  - For now (during initial testing) the database is kept in memory. Will be using SQL later
  */
 
 import (
@@ -19,15 +19,36 @@ const (
 type User struct {
   ID int64;
   FirstName string;
-  LastName string `json=",omitempty"`;
-  UserName string `json=",omitempty"`;
+  LastName string `json:",omitempty"`;
+  UserName string `json:",omitempty"`;
 
   Permissions string; //U: admin/allow/block
+  Mode string;
 };
 var Users map[int64]User;
+var UserCache map[int64][]byte; //TODO: Timedmap
+
+var TODODb map[int64][]TODOEntry;
 
 func dbInit() {
   Users = make(map[int64]User);
+  UserCache = make(map[int64][]byte);
+
+  TODODb = make(map[int64][]TODOEntry);
+  TODODb[Config.Admin[0]] = []TODOEntry{
+    {ID: 0, Title: "Leer LIBRO", Description: "Quiero leer un LIBRO", Urgency: "low", Length: "medium", Tags: []string{"facu", "libro", "estudio"}},
+  };
+  TODODb[Config.Admin[1]] = []TODOEntry{
+    {ID: 0, Title: "Domingo", Description: "Compras", Urgency: "medium", Length: "medium", Tags: []string{"Navidad"}},
+    {ID: 1, Title: "ABCDEFGHIJK", Description: "Testing how long this can get before being too ugly", Urgency: "urgent", Length: "medium", Tags: []string{"is", "this", "a", "normal", "amount", "of", "tags", "or", "am", "I", "being", "too", "exaggerated", "?"}},
+    {ID: 1, Title: "ABCDEFGHIJK", Description: "Testing how long this can get before being too ugly", Urgency: "urgent", Length: "medium", Tags: []string{"is", "this", "a", "normal", "amount", "of", "tags", "or", "am", "I", "being", "too", "exaggerated", "?"}},
+    {ID: 1, Title: "ABCDEFGHIJK", Description: "Testing how long this can get before being too ugly", Urgency: "urgent", Length: "medium", Tags: []string{"is", "this", "a", "normal", "amount", "of", "tags", "or", "am", "I", "being", "too", "exaggerated", "?"}},
+    {ID: 1, Title: "ABCDEFGHIJK", Description: "Testing how long this can get before being too ugly", Urgency: "urgent", Length: "medium", Tags: []string{"is", "this", "a", "normal", "amount", "of", "tags", "or", "am", "I", "being", "too", "exaggerated", "?"}},
+    {ID: 1, Title: "ABCDEFGHIJK", Description: "Testing how long this can get before being too ugly", Urgency: "urgent", Length: "medium", Tags: []string{"is", "this", "a", "normal", "amount", "of", "tags", "or", "am", "I", "being", "too", "exaggerated", "?"}},
+    {ID: 1, Title: "ABCDEFGHIJK", Description: "Testing how long this can get before being too ugly", Urgency: "urgent", Length: "medium", Tags: []string{"is", "this", "a", "normal", "amount", "of", "tags", "or", "am", "I", "being", "too", "exaggerated", "?"}},
+    {ID: 1, Title: "ABCDEFGHIJK", Description: "Testing how long this can get before being too ugly", Urgency: "urgent", Length: "medium", Tags: []string{"is", "this", "a", "normal", "amount", "of", "tags", "or", "am", "I", "being", "too", "exaggerated", "?"}},
+    {ID: 1, Title: "ABCDEFGHIJK", Description: "Testing how long this can get before being too ugly", Urgency: "urgent", Length: "medium", Tags: []string{"is", "this", "a", "normal", "amount", "of", "tags", "or", "am", "I", "being", "too", "exaggerated", "?"}},
+  };
 }
 
 func dbGetUser(requestUser *tgbotapi.User) User {
@@ -39,6 +60,8 @@ func dbGetUser(requestUser *tgbotapi.User) User {
       FirstName: requestUser.FirstName,
       LastName: requestUser.LastName,
       UserName: requestUser.UserName,
+
+      Mode: "",
     };
 
     //A: Set permissions
@@ -56,4 +79,8 @@ func dbGetUser(requestUser *tgbotapi.User) User {
   }
 
   return user;
+}
+
+func dbSetUser(user *User) {
+  Users[user.ID] = *user;
 }

@@ -12,10 +12,16 @@ type Command struct {
   Description string;
   Admin bool; //U: Admin required to use this command
 
-  Function func(User, *tgbotapi.Message, *tgbotapi.MessageConfig) error;
+  Function func(*User, *tgbotapi.Message, *tgbotapi.MessageConfig) error;
 };
 var Commands map[string]Command = map[string]Command{ //U: Add commands to be registered here
+  "test": {Description: "Whatever I might be testing right now", Admin: true, Function: cmdTest},
+  "ing": {Description: "Whatever I might be testing right now", Admin: true, Function: cmdIng},
+
   "ping": {Description: "Ping me", Function: cmdPing},
+  "cancel": {Description: "Leave the current mode", Function: cmdCancel},
+
+  "todo": {Description: "Get the TODO hub", Function: cmdTodo},
   "ip": {Description: "...", Admin: true, Function: cmdIP},
 };
 
@@ -34,7 +40,7 @@ func registerCommands() { //U: Registers all known commands
   //TODO: Simplify
 }
 
-func handleCommand(user User, msg *tgbotapi.Message) {
+func handleCommand(user *User, msg *tgbotapi.Message) {
   var err error;
   reply := newReply(user, msg); 
 
@@ -64,14 +70,30 @@ SEND:
   if err != nil {
     log.Printf("[handleCommand] Error on send: %v", err);
   }
+
+  //TODO: Should all commands cancelMode?
 }
 
-func cmdPing(user User, msg *tgbotapi.Message, reply *tgbotapi.MessageConfig) error {
+func cmdPing(user *User, msg *tgbotapi.Message, reply *tgbotapi.MessageConfig) error {
   reply.Text = "pong";
   return nil;
 }
 
-func cmdIP(user User, msg *tgbotapi.Message, reply *tgbotapi.MessageConfig) error {
+func cmdCancel(user *User, msg *tgbotapi.Message, reply *tgbotapi.MessageConfig) error {
+  reply.Text = fmt.Sprintf("Exited mode: %v", user.Mode);
+  cancelMode(user);
+  return nil;
+}
+
+func cmdTest(user *User, msg *tgbotapi.Message, reply *tgbotapi.MessageConfig) error {
+  return nil;
+}
+
+func cmdIng(user *User, msg *tgbotapi.Message, reply *tgbotapi.MessageConfig) error {
+  return nil;
+}
+
+func cmdIP(user *User, msg *tgbotapi.Message, reply *tgbotapi.MessageConfig) error {
   changed, err := updateIP();
   if err == nil {
     reply.Text = fmt.Sprintf("IP (%v): %v", changed, CurrIP);
