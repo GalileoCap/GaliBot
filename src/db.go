@@ -19,9 +19,8 @@ const (
 type User struct {
   ID int64;
   FirstName string;
-  LastName string `json=",omitempty"`;
-  UserName string `json=",omitempty"`;
-
+  LastName string `json:",omitempty"`;
+  UserName string `json:",omitempty"`;
   Permissions string; //U: admin/allow/block
 };
 var Users map[int64]User;
