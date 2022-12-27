@@ -28,7 +28,10 @@ func receiveUpdates() {
   updates := Bot.GetUpdatesChan(u);
   for update := range updates {
     log.Printf("[receiveUpdates] New update uid=%v", update.SentFrom().ID);
-    user := dbGetUser(update.SentFrom());
+    user, err := dbGetUser(update.SentFrom());
+    if err != nil {
+      log.Printf("[receiveUpdates] Error getting user: %v", err);
+    }
 
     if user.Permissions == "block" { //A: Ignore them
       continue;
@@ -45,10 +48,16 @@ func receiveUpdates() {
     } else {
       log.Printf("[receiveUpdates] Unhandled update: %+v", update) //TODO: Print which type rather the entire thing
     }
+
+    err = dbSaveUser(user);
+    if err != nil {
+      log.Printf("[receiveUpdates] Error saving user: %v", err);
+      continue;
+    }
   }
 }
 
-func newReply(user User, msg *tgbotapi.Message) tgbotapi.MessageConfig {
+func newReply(user *User, msg *tgbotapi.Message) tgbotapi.MessageConfig {
   reply := tgbotapi.NewMessage(user.ID, ""); //TODO: Default text
   reply.ReplyToMessageID = msg.MessageID; 
   return reply;

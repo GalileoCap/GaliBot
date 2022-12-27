@@ -1,4 +1,4 @@
-package main;
+package main
 
 /*
  * TODO:
@@ -6,9 +6,13 @@ package main;
  */
 
 import (
-  tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/muesli/cache2go"
 
-  "log"
+  "time"
+	"errors"
+	"fmt"
+	"log"
 );
 
 type ModeT int;
@@ -23,36 +27,75 @@ type User struct {
   UserName string `json:",omitempty"`;
   Permissions string; //U: admin/allow/block
 };
-var Users map[int64]User;
+var _Users map[int64]*User; //U: Temporary until I have persistent storage //TODO: Remove
+var Users *cache2go.CacheTable;
 
 func dbInit() {
-  Users = make(map[int64]User);
+  _Users = make(map[int64]*User);
+  Users = cache2go.Cache("users");
+  Users.SetDataLoader(dbUsersDataLoader);
 }
 
-func dbGetUser(requestUser *tgbotapi.User) User {
-  user, present := Users[requestUser.ID];
+func dbUsersDataLoader(key interface{}, args ...interface{}) *cache2go.CacheItem {
+  err := args[1].(*error);
 
-  if !present { //A: Create it
-    user = User{
-      ID: requestUser.ID,
-      FirstName: requestUser.FirstName,
-      LastName: requestUser.LastName,
-      UserName: requestUser.UserName,
-    };
-
-    //A: Set permissions
-    if contains(Config.Admin, user.ID) { //A: Is an admin
-      user.Permissions = "admin";
-    } else if contains(Config.Block, user.ID) { //A: Is blocked
-      user.Permissions = "block";
-    } else { //A: Default
-      user.Permissions = "allow";
-    }
-    //TODO: Simplify
-
-    log.Printf("[dbGetUser] New user: %+v", user);
-    Users[requestUser.ID] = user; //A: Save it
+  user, present := _Users[key.(int64)]; //TODO: Load from the database
+  if !present {
+    *err = errors.New(fmt.Sprintf("[dbUsersDataLoader] User not present: %v", key.(int64)));
+    return nil;
   }
 
-  return user;
+  *err = nil;
+  return cache2go.NewCacheItem(user.ID, 0, user); //TODO: Lifetime
+}
+
+func dbGetUser(requestUser *tgbotapi.User) (*User, error) {
+  var err error;
+  item, _ := Users.Value(requestUser.ID, requestUser, &err); //NOTE: The error returned is useless
+  if err == nil { //A: They are cache'd
+    return item.Data().(*User), nil; 
+  }
+
+  //TODO: Check err == "Not in db"
+
+  //A: They're a new user
+  user, err := dbNewUser(requestUser);
+  if err != nil {
+    return nil, err;
+  }
+
+  return user, nil;
+}
+
+func dbSaveUser(user *User) error {
+  Users.Add(user.ID, 60 * time.Second, user);
+  _Users[user.ID] = user; //TODO: Persistent
+  return nil;
+}
+
+func dbNewUser(requestUser *tgbotapi.User) (*User, error) {
+  user := &User{
+    ID: requestUser.ID,
+    FirstName: requestUser.FirstName,
+    LastName: requestUser.LastName,
+    UserName: requestUser.UserName,
+  };
+
+  //A: Set permissions
+  if contains(Config.Admin, user.ID) { //A: Is an admin
+    user.Permissions = "admin";
+  } else if contains(Config.Block, user.ID) { //A: Is blocked
+    user.Permissions = "block";
+  } else { //A: Default
+    user.Permissions = "allow";
+  }
+  //TODO: Simplify
+
+  err := dbSaveUser(user);
+  if err != nil {
+    return nil, err;
+  }
+
+  log.Printf("[dbNewUser] New user: %+v", user);
+  return user, nil;
 }
