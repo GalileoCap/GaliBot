@@ -11,6 +11,7 @@ type ConfigT struct {
   Token string
   TestToken string `json:",omitempty"`
 
+  CacheLifespan int
   Test bool
 
   Admin []int64 `json:",omitempty"`
@@ -28,7 +29,7 @@ func parseConfig(path string, test bool) {
     log.Fatalf("[readToken] %v", err);
   }
 
-  Config.Test = test;
+  Config.Test = test; //TODO: Precedence only if the flag was given
 }
 
 func main() {

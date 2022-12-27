@@ -38,6 +38,7 @@ func dbInit() {
   _Users = make(map[int64]*User);
   Users = cache2go.Cache("users");
   Users.SetDataLoader(dbUsersDataLoader);
+  Users.SetAboutToDeleteItemCallback(func (item *cache2go.CacheItem) { log.Printf("Delete: %v", item.Data().(*User).ID); });
 }
 
 func dbUsersDataLoader(key interface{}, args ...interface{}) *cache2go.CacheItem {
@@ -50,7 +51,7 @@ func dbUsersDataLoader(key interface{}, args ...interface{}) *cache2go.CacheItem
   }
 
   *err = nil;
-  return cache2go.NewCacheItem(user.ID, 0, user); //TODO: Lifetime
+  return cache2go.NewCacheItem(user.ID, time.Duration(Config.CacheLifespan) * time.Second, user);
 }
 
 func dbGetUser(requestUser *tgbotapi.User) (*User, error) {
@@ -72,7 +73,7 @@ func dbGetUser(requestUser *tgbotapi.User) (*User, error) {
 }
 
 func dbSaveUser(user *User) error {
-  Users.Add(user.ID, 60 * time.Second, user);
+  Users.Add(user.ID, time.Duration(Config.CacheLifespan) * time.Second, user);
   _Users[user.ID] = user; //TODO: Persistent
   return nil;
 }
