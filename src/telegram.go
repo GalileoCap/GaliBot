@@ -28,7 +28,10 @@ func receiveUpdates() {
   updates := Bot.GetUpdatesChan(u);
   for update := range updates {
     log.Printf("[receiveUpdates] New update uid=%v", update.SentFrom().ID);
-    user := dbGetUser(update.SentFrom());
+    user, err := dbGetUser(update.SentFrom());
+    if err != nil {
+      log.Printf("[receiveUpdates] Error getting user: %v", err);
+    }
 
     if user.Permissions == "block" { //A: Ignore them
       continue;
@@ -36,18 +39,22 @@ func receiveUpdates() {
 
     if update.Message != nil {
       if update.Message.IsCommand() {
-        handleCommand(&user, update.Message);
+        handleCommand(user, update.Message);
       } else {
-        handleMode(&user, update.Message);
+        handleMode(user, update.Message);
       }
     } else if update.CallbackQuery != nil {
-      handleCallback(&user, update.CallbackQuery);
+      handleCallback(user, update.CallbackQuery);
     } else {
       log.Printf("[receiveUpdates] Unhandled update: %+v", update) //TODO: Print which type rather the entire thing
       continue;
     }
 
-    dbSetUser(&user);
+    err = dbSaveUser(user);
+    if err != nil {
+      log.Printf("[receiveUpdates] Error saving user: %v", err);
+      continue;
+    }
   }
 }
 

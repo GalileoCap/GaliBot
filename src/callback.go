@@ -13,9 +13,6 @@ type Callback struct {
   Function func(*User, string, *tgbotapi.Message, *tgbotapi.EditMessageTextConfig) error;
 };
 var Callbacks map[string]Callback = map[string]Callback{ //U: Add all possible callbacks here
-  "todoNew": {Function: cbTodoNew},
-  "todoList": {Function: cbTodoList},
-  "todoEntry": {Function: cbTodoEntry},
 };
 
 func handleCallback(user *User, query *tgbotapi.CallbackQuery) {

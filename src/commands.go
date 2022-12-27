@@ -21,7 +21,6 @@ var Commands map[string]Command = map[string]Command{ //U: Add commands to be re
   "ping": {Description: "Ping me", Function: cmdPing},
   "cancel": {Description: "Leave the current mode", Function: cmdCancel},
 
-  "todo": {Description: "Get the TODO hub", Function: cmdTodo},
   "ip": {Description: "...", Admin: true, Function: cmdIP},
 };
 
@@ -74,6 +73,14 @@ SEND:
   //TODO: Should all commands cancelMode?
 }
 
+func cmdTest(user *User, msg *tgbotapi.Message, reply *tgbotapi.MessageConfig) error {
+  return nil;
+}
+
+func cmdIng(user *User, msg *tgbotapi.Message, reply *tgbotapi.MessageConfig) error {
+  return nil;
+}
+
 func cmdPing(user *User, msg *tgbotapi.Message, reply *tgbotapi.MessageConfig) error {
   reply.Text = "pong";
   return nil;
@@ -82,14 +89,6 @@ func cmdPing(user *User, msg *tgbotapi.Message, reply *tgbotapi.MessageConfig) e
 func cmdCancel(user *User, msg *tgbotapi.Message, reply *tgbotapi.MessageConfig) error {
   reply.Text = fmt.Sprintf("Exited mode: %v", user.Mode);
   cancelMode(user);
-  return nil;
-}
-
-func cmdTest(user *User, msg *tgbotapi.Message, reply *tgbotapi.MessageConfig) error {
-  return nil;
-}
-
-func cmdIng(user *User, msg *tgbotapi.Message, reply *tgbotapi.MessageConfig) error {
   return nil;
 }
 
