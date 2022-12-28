@@ -6,13 +6,18 @@ import (
   //"fmt"
   "log"
   "strings"
-  //"errors"
+  "errors"
+)
+
+var (
+  ErrCBInvalidQuery = errors.New("Invalid callback query")
 )
 
 type Callback struct {
   Function func(*User, string, *tgbotapi.Message, *tgbotapi.EditMessageTextConfig) error;
 };
 var Callbacks map[string]Callback = map[string]Callback{ //U: Add all possible callbacks here
+  "fooddoNew": {Function: fooddoNewCB},
 };
 
 func handleCallback(user *User, query *tgbotapi.CallbackQuery) {

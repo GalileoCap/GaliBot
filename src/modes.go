@@ -13,6 +13,8 @@ type Mode struct {
 };
 var Modes map[string]Mode = map[string]Mode{ //U: Add all possible modes here
   "": {Function: modeDefault},
+  
+  "fooddoNewDescribe": {Function: fooddoNewDescribeMode},
 };
 
 func handleMode(user *User, msg *tgbotapi.Message) {

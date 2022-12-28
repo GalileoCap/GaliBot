@@ -22,6 +22,8 @@ var Commands map[string]Command = map[string]Command{ //U: Add commands to be re
   "ping": {Description: "Ping me", Function: cmdPing},
   "cancel": {Description: "Leave the current mode", Function: cmdCancel},
 
+  "fooddo": {Description: "Show FoodDO HUB", Function: fooddoCMD},
+
   "ip": {Description: "...", Admin: true, Function: cmdIP},
 };
 

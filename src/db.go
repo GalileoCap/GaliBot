@@ -28,6 +28,7 @@ type User struct {
 
   // This block only exists on the cache
   Mode string;
+  FOODDOEntry *FOODDOEntry;
 };
 var DB *sql.DB;
 var Users *cache2go.CacheTable;
@@ -42,6 +43,12 @@ func dbInit(dbPath string) {
 
   Users = cache2go.Cache("users");
   Users.SetDataLoader(dbUsersDataLoader);
+  Users.SetAboutToDeleteItemCallback(dbUsersDelete)
+}
+
+func dbUsersDelete(item *cache2go.CacheItem) {
+  user := item.Data().(*User)
+  cancelMode(user)
 }
 
 func dbUsersDataLoader(key interface{}, args ...interface{}) *cache2go.CacheItem {
