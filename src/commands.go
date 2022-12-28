@@ -49,7 +49,7 @@ func handleCommand(user *User, msg *tgbotapi.Message) {
     goto SEND;
   }
 
-  if cmd.Admin && user.Permissions != "admin" {
+  if cmd.Admin && user.Permissions != 0 {
     reply.Text = fmt.Sprintf("You don't have the correct permissions for the command /%v", msg.Command());
     goto SEND;
   }

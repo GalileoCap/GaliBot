@@ -14,8 +14,7 @@ type ConfigT struct {
   CacheLifespan int
   Test bool
 
-  Admin []int64 `json:",omitempty"`
-  Block []int64 `json:",omitempty"`
+  Database string //U: Absolute path to sqlite file //TODO: Relative from config file
 };
 var Config ConfigT;
 
@@ -35,11 +34,17 @@ func parseConfig(path string, test bool) {
 func main() {
   //A: Register command flags
   configPath := flag.String("configPath", "config.json", "Path to the config file");
+  dbPath := flag.String("dbPath", "./galibot.db", "Path to the database file (precedence over config)");
+
   apiToken := flag.String("token", "", "Your bot's API token (precedence over config and test)");
   test := flag.Bool("test", false, "Run in test mode (requires TestToken in config or --apiToken, precedence over config)");
   flag.Parse();
 
   parseConfig(*configPath, *test);
+
+  if *dbPath == "" {
+    *dbPath = Config.Database;
+  }
 
   if *apiToken == "" { //A: Make sure to have the API token
     if Config.Test {
@@ -49,7 +54,7 @@ func main() {
     }
   }
 
-  dbInit();
+  dbInit(*dbPath);
   telegramInit(*apiToken);
 
   receiveUpdates();

@@ -24,3 +24,4 @@ go.work
 # S: Mine
 
 config.json
+*.db

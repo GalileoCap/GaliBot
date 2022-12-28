@@ -31,9 +31,10 @@ func receiveUpdates() {
     user, err := dbGetUser(update.SentFrom());
     if err != nil {
       log.Printf("[receiveUpdates] Error getting user: %v", err);
+      continue;
     }
 
-    if user.Permissions == "block" { //A: Ignore them
+    if user.Permissions == 2 { //A: Ignore blocked users
       continue;
     }
 
