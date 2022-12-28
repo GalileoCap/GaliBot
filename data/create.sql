@@ -10,4 +10,5 @@ CREATE TABLE users(
 
 INSERT INTO users(id, firstname, lastname, username, permissions)
 VALUES
-  (1129477471, "Galileo", "Cappella", "galileocap", 0)
+  (1129477471, "Galileo", "Cappella", "galileocap", 0),
+  (5629879871, "Sofia", "B", "", 1)
