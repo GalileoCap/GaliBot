@@ -11,12 +11,13 @@ import (
 type Command struct {
   Description string;
   Admin bool; //U: Admin required to use this command
+  Tester bool; //U: At least tester required to use this command
 
   Function func(*User, *tgbotapi.Message, *tgbotapi.MessageConfig) error;
 };
 var Commands map[string]Command = map[string]Command{ //U: Add commands to be registered here
-  "test": {Description: "Whatever I might be testing right now", Admin: true, Function: cmdTest},
-  "ing": {Description: "Whatever I might be testing right now", Admin: true, Function: cmdIng},
+  "test": {Description: "Whatever I might be testing right now", Tester: true, Function: cmdTest},
+  "ing": {Description: "Whatever I might be testing right now", Tester: true, Function: cmdIng},
 
   "ping": {Description: "Ping me", Function: cmdPing},
   "cancel": {Description: "Leave the current mode", Function: cmdCancel},
@@ -27,7 +28,9 @@ var Commands map[string]Command = map[string]Command{ //U: Add commands to be re
 func registerCommands() { //U: Registers all known commands
   commands := make([]tgbotapi.BotCommand, 0, len(Commands));
   for name, command := range Commands {
-    commands = append(commands, tgbotapi.BotCommand{Command: name, Description: command.Description});
+    if !command.Tester || Config.Test { //A: Don't include test commands on release
+      commands = append(commands, tgbotapi.BotCommand{Command: name, Description: command.Description});
+    }
   }
 
   _, err := Bot.Request(tgbotapi.NewSetMyCommands(commands...));
@@ -49,7 +52,7 @@ func handleCommand(user *User, msg *tgbotapi.Message) {
     goto SEND;
   }
 
-  if cmd.Admin && user.Permissions != 0 {
+  if (cmd.Admin && user.Permissions != 0) || (cmd.Tester && user.Permissions > 1) {
     reply.Text = fmt.Sprintf("You don't have the correct permissions for the command /%v", msg.Command());
     goto SEND;
   }
