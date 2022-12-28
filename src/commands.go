@@ -5,6 +5,7 @@ import (
 
   "fmt"
   "log"
+  "strings"
   //"errors"
 )
 
@@ -12,25 +13,27 @@ type Command struct {
   Description string;
   Admin bool; //U: Admin required to use this command
   Tester bool; //U: At least tester required to use this command
+  Skip bool;
 
   Function func(*User, *tgbotapi.Message, *tgbotapi.MessageConfig) error;
 };
 var Commands map[string]Command = map[string]Command{ //U: Add commands to be registered here
-  "test": {Description: "Whatever I might be testing right now", Tester: true, Function: cmdTest},
-  "ing": {Description: "Whatever I might be testing right now", Tester: true, Function: cmdIng},
+  "test": {Description: "Whatever I might be testing right now", Tester: true, Skip: true, Function: cmdTest},
+  "ing": {Description: "Whatever I might be testing right now", Tester: true, Skip: true, Function: cmdIng},
 
   "ping": {Description: "Ping me", Function: cmdPing},
   "cancel": {Description: "Leave the current mode", Function: cmdCancel},
 
   "fooddo": {Description: "Show FoodDO HUB", Function: fooddoCMD},
+  "foodo": {Description: "Show FoodDO HUB", Skip: true, Function: fooddoCMD}, //A: Accept typos
 
-  "ip": {Description: "...", Admin: true, Function: cmdIP},
+  "ip": {Description: "...", Admin: true, Skip: true, Function: cmdIP},
 };
 
 func registerCommands() { //U: Registers all known commands
   commands := make([]tgbotapi.BotCommand, 0, len(Commands));
   for name, command := range Commands {
-    if !command.Tester || Config.Test { //A: Don't include test commands on release
+    if !command.Skip && (!command.Tester || Config.Test) { //A: Don't include test commands on release
       commands = append(commands, tgbotapi.BotCommand{Command: name, Description: command.Description});
     }
   }
@@ -48,7 +51,7 @@ func handleCommand(user *User, msg *tgbotapi.Message) {
   var err error;
   reply := newReply(user, msg); 
 
-  cmd, present := Commands[msg.Command()];
+  cmd, present := Commands[strings.ToLower(msg.Command())];
   if !present {
     reply.Text = fmt.Sprintf("Unknown command /%v, try asking for /help", msg.Command());
     goto SEND;
