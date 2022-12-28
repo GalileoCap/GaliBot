@@ -1,4 +1,4 @@
-CREATE TABLE foodo_entries(
+CREATE TABLE fooddo_entries(
   -- NOTE: rowid is the entry's unique id
   UserID BIGINT NOT NULL, -- Telegram's UserID of the entry's owner
 
