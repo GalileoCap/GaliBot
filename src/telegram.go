@@ -34,7 +34,7 @@ func receiveUpdates() {
       continue;
     }
 
-    if user.Permissions == 2 { //A: Ignore blocked users
+    if user.Permissions == 3 { //A: Ignore blocked users
       continue;
     }
 
