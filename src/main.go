@@ -34,7 +34,7 @@ func parseConfig(path string, test bool) {
 func main() {
   //A: Register command flags
   configPath := flag.String("configPath", "config.json", "Path to the config file");
-  dbPath := flag.String("dbPath", "./galibot.db", "Path to the database file (precedence over config)");
+  dbPath := flag.String("dbPath", "", "Path to the database file (precedence over config)");
 
   apiToken := flag.String("token", "", "Your bot's API token (precedence over config and test)");
   test := flag.Bool("test", false, "Run in test mode (requires TestToken in config or --apiToken, precedence over config)");
