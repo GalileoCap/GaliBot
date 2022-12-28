@@ -42,7 +42,6 @@ func dbInit(dbPath string) {
 
   Users = cache2go.Cache("users");
   Users.SetDataLoader(dbUsersDataLoader);
-  Users.SetAboutToDeleteItemCallback(func (item *cache2go.CacheItem) { log.Printf("Delete: %v", item.Data().(*User).ID); });
 }
 
 func dbUsersDataLoader(key interface{}, args ...interface{}) *cache2go.CacheItem {
