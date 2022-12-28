@@ -5,6 +5,7 @@ import (
 
   "fmt"
   "log"
+  "strings"
   //"errors"
 )
 
@@ -47,7 +48,7 @@ func handleCommand(user *User, msg *tgbotapi.Message) {
   var err error;
   reply := newReply(user, msg); 
 
-  cmd, present := Commands[msg.Command()];
+  cmd, present := Commands[strings.ToLower(msg.Command())];
   if !present {
     reply.Text = fmt.Sprintf("Unknown command /%v, try asking for /help", msg.Command());
     goto SEND;
