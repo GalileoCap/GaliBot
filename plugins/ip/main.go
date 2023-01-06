@@ -38,7 +38,7 @@ var currIP string;
 var users = []int64{1129477471}
 
 func Init() error {
-  ticker := time.NewTicker(time.Second)
+  ticker := time.NewTicker(time.Hour)
   go func() {
     for {
       <-ticker.C
