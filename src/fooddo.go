@@ -7,8 +7,17 @@ import (
   "strconv"
   "time"
   "fmt"
-  //"log"
+  "log"
 )
+
+type FOODDOUser struct {
+  ID int64 //U: Telegram's UserID of the entry's owner
+
+  Breakfast int16
+  Lunch int16
+  Merienda int16
+  Dinner int16
+}
 
 type FOODDOEntry struct {
   ID int64 //U: Entry's unique ID
@@ -60,6 +69,31 @@ func fooddoAddEntry(entry *FOODDOEntry) error {
 
   entry.ID = id
   return nil
+}
+
+func fooddoRoutine() {
+  firstDelay := time.Now().Minute() % 30
+  log.Printf("[fooddoRoutine] First delay for %v minutes", firstDelay)
+  time.Sleep(time.Duration(firstDelay) * time.Minute) //A: Wait until first half-hour
+  for {
+    now := time.Now().Hour() * 100 + time.Now().Minute() //A: To military time //TODO: Round down to 00/30
+    rows, err := DB.Query("SELECT * FROM fooddo_users WHERE Breakfast = ? OR Lunch = ? OR Merienda = ? OR Dinner = ?", now, now, now, now)
+    if err != nil {
+      log.Printf("[fooddoRoutine] Error with query: %v", err)
+    }
+    for rows.Next() {
+      var user FOODDOUser
+      if err := rows.Scan(&user.ID, &user.Breakfast, &user.Lunch, &user.Merienda, &user.Dinner); err != nil {
+        log.Printf("[fooddoRoutine] Error scanning: %v", err)
+      }
+      log.Print(user)
+    }
+
+    //TODO: Send message asking for an entry to all registered users with this time
+
+    rows.Close()
+    time.Sleep(30 * time.Minute)
+  }
 }
 
 func fooddoCMD(user *User, msg *tgbotapi.Message, reply *tgbotapi.MessageConfig) error {

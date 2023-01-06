@@ -82,6 +82,7 @@ SEND:
 }
 
 func cmdTest(user *User, msg *tgbotapi.Message, reply *tgbotapi.MessageConfig) error {
+  fooddoRoutine()
   return nil;
 }
 

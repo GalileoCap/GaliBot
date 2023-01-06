@@ -1,4 +1,14 @@
-CREATE TABLE fooddo_entries(
+CREATE TABLE IF NOT EXISTS fooddo_users(
+  ID BIGINT UNIQUE NOT NULL, -- Telegram's UserID of the entry's owner
+
+  -- Times in military time, or -1 if skip
+  Breakfast SMALLINT NOT NULL,
+  Lunch SMALLINT NOT NULL,
+  Merienda SMALLINT NOT NULL,
+  Dinner SMALLINT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS fooddo_entries(
   -- NOTE: rowid is the entry's unique id
   UserID BIGINT NOT NULL, -- Telegram's UserID of the entry's owner
 
