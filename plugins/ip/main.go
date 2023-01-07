@@ -9,6 +9,7 @@ import (
 	"time"
 	"fmt"
   "log"
+  "errors"
 )
 
 var Export = tggenbot.Plugin{
@@ -88,6 +89,10 @@ func getIP() (bool, error) {
   }
 
   newIP, prevIP := string(newIP_b), currIP;
+  if newIP == "Bad Gateway" {
+    log.Printf("Bad Gateway: %+v", resp)
+    return false, errors.New("Bad Gateway")
+  }
   currIP = newIP;
 
   return currIP != prevIP, nil;
